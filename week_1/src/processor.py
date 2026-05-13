@@ -18,7 +18,7 @@ def process_all_html(input_dir, output_dir):
     processed = 0
     skipped = 0
 
-    print("🥈 Silver: Treatment Plant")
+    print("🥈 Silver:...")
 
     # Loop all HTML files
     for html_file in input_dir.glob("*.html"):

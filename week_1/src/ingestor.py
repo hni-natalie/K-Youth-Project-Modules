@@ -11,7 +11,7 @@ def ingest_all_mhtml(input_dir, output_dir):
     failed = 0
 
     # Header print
-    print("🥉 Bronze: Extractor ")
+    print("🥉 Bronze:...")
 
     # Loop through all .mhtml files in source folder
     for mhtml_file in input_dir.glob("*.mhtml"):
