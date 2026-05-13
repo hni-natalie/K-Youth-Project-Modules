@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path 
 from src.ingestor import ingest_all_mhtml
-# from src.processor import process_all_html
+from src.processor import process_all_html
 # from src.loader import load_all_jsons
 # from src.run_data_profile import run_data_profile
 
@@ -23,7 +23,7 @@ def run_gold():
 def run_silver():
     input_dir = BRONZE_DIR
     output_dir = SILVER_DIR
-    # process_all_html(input_dir, output_dir)
+    process_all_html(input_dir, output_dir)
 
 def run_bronze():
     input_dir = SOURCE_DIR
