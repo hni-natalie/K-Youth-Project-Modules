@@ -32,7 +32,7 @@ def run_bronze():
     
 def main():
     if len(sys.argv) < 2:
-        print("Please provide a command: ingest | | | ")
+        print("Please provide a command: ingest | process | | ")
         return
 
     command = sys.argv[1]
@@ -41,6 +41,8 @@ def main():
         case "ingest":
             run_bronze()
 
+        case "process":
+            run_silver()        
 
         case _:
             print(f"Unknown command: {command}")
