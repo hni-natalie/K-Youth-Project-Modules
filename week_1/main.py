@@ -2,7 +2,7 @@ import sys
 from pathlib import Path 
 from src.ingestor import ingest_all_mhtml
 from src.processor import process_all_html
-# from src.loader import load_all_jsons
+from src.loader import load_all_jsons
 # from src.run_data_profile import run_data_profile
 
 SOURCE_DIR = Path("data/0_source")
@@ -18,7 +18,7 @@ def run_profiler():
 def run_gold():
     input_dir = SILVER_DIR
     output_dir = GOLD_DIR
-    # load_all_jsons(input_dir, output_dir)
+    load_all_jsons(input_dir, output_dir)
 
 def run_silver():
     input_dir = BRONZE_DIR
@@ -32,7 +32,7 @@ def run_bronze():
     
 def main():
     if len(sys.argv) < 2:
-        print("Please provide a command: ingest | process | | ")
+        print("Please provide a command: ingest | process | load | ")
         return
 
     command = sys.argv[1]
@@ -42,7 +42,10 @@ def main():
             run_bronze()
 
         case "process":
-            run_silver()        
+            run_silver()  
+
+        case "load":
+            run_gold()      
 
         case _:
             print(f"Unknown command: {command}")
