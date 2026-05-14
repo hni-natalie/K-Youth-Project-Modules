@@ -5,6 +5,10 @@ def load_all_jsons(input_dir, output_dir):
     # Create output folder
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # Clean old JSON files
+    for old_file in output_dir.glob("*.json"):
+        old_file.unlink()
+
     total = 0
     inserted = 0
     skipped = 0
