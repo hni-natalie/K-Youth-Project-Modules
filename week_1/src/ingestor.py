@@ -6,6 +6,10 @@ def ingest_all_mhtml(input_dir, output_dir):
     # Create otuptu folder if it doesn't exist 
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # Clean old HTML files
+    for old_file in output_dir.glob("*.html"):
+        old_file.unlink()
+
     total_files = 0
     extracted = 0
     failed = 0

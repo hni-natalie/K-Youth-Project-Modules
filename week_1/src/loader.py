@@ -5,9 +5,10 @@ def load_all_jsons(input_dir, output_dir):
     # Create output folder
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Clean old JSON files
-    for old_file in output_dir.glob("*.json"):
-        old_file.unlink()
+    # Create Database 
+    db_path = output_dir / "jobs.db"
+    connection = sqlite3.connect(db_path)
+    cursor = connection.cursor()
 
     total = 0
     inserted = 0
@@ -15,11 +16,6 @@ def load_all_jsons(input_dir, output_dir):
 
     # Header
     print("🥇 Gold:...")
-
-    # Create Database 
-    db_path = output_dir / "jobs.db"
-    connection = sqlite3.connect(db_path)
-    cursor = connection.cursor()
 
     # Create Table
     cursor.execute("""

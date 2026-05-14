@@ -14,9 +14,9 @@ def process_all_html(input_dir, output_dir):
     # Create output folder
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Clean old HTML files
-    for old_file in output_dir.glob("*.html"):
-        old_file.unlink()    
+    # Clean old JSON files
+    for old_file in output_dir.glob("*.json"):
+        old_file.unlink()
 
     total = 0
     processed = 0
