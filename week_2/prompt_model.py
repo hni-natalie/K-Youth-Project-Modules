@@ -1,57 +1,75 @@
-import sys
 import os
+import sys
 import requests
 from google import genai
 
-def prompt_model(model: str, prompt: str) -> str :
+
+def prompt_gemini(model: str, prompt: str) -> str:
+    """
+        Handle Gemini model requests
+    """
     
-    print("\n--- RESPONSE ---\n")
+    try:
+        api_key = os.getenv("GEMINI_API_KEY")
+        client = genai.Client(api_key=api_key)
 
-    # Gemini Model
-    if model.startswith("gemini-"):
-        try:
-            API_KEY = os.getenv("GEMINI_API_KEY")
-            client = genai.Client(api_key=API_KEY)
+        response = client.models.generate_content(
+            model=model,
+            contents=prompt
+        )
 
-            response = client.models.generate_content(
-                model=model,
-                contents=prompt
-            )
+        return response.text
 
-            print(response.text)
+    except Exception as e:
+        return f"[Gemini Error] {str(e)}"
 
-        except Exception as e:
-            print(f"[Gemini Error] {str(e)}")
-            
-    # Ollama Model
-    else:
-        try:
-            res = requests.post(
-                "http://localhost:11434/api/generate",
-                json={
-                    "model": model,
-                    "prompt": prompt,
-                    "stream": False
-                }
-            )
 
-            data = res.json()
+def prompt_ollama(model: str, prompt: str) -> str:
+    """
+        Handle Ollama model requests
+    """
 
-            # Check for error first
-            if "error" in data:
-                print(f"[Ollama Error] {data['error']}")
-                return
+    try:
+        res = requests.post(
+            "http://localhost:11434/api/generate",
+            json={
+                "model": model,
+                "prompt": prompt,
+                "stream": False
+            }
+        )
 
-            # Safe access
-            print(data.get("response", "[No response field returned]"))
-        except Exception as e:
-            print(f"[Ollama Error] {str(e)}")
+        data = res.json()
+
+        if "error" in data:
+            return f"[Ollama Error] {data['error']}"
+
+        return data.get("response", "[No response field returned]")
+
+    except Exception as e:
+        return f"[Ollama Error] {str(e)}"
+
+
+def prompt_model(model: str, prompt: str) -> str:
+    """
+        Route request to the correct model provider
+    """
         
+    if model.startswith("gemini-"):
+        return prompt_gemini(model, prompt)
+    
+    return prompt_ollama(model, prompt)
 
-if __name__ == "__main__":
+
+def test_prompt():
     if len(sys.argv) != 3:
-        print(f'Usage: uv run prompt_model.py <model> <prompt>')
+        return f'Usage: uv run prompt_model.py <model> <prompt>'
+    
     else:        
         model = sys.argv[1]
         prompt = sys.argv[2]
-        prompt_model(model, prompt)
+        output = prompt_model(model, prompt)
+        return output
+
+if __name__ == "__main__":
+    print(test_prompt())

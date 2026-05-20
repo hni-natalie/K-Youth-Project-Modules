@@ -1,10 +1,14 @@
 import sqlite3
 import logging
 import time
-from .prompt_model import prompt_model
+from pathlib import Path 
+from prompt_model import prompt_model
 
 GREEN = "\033[92m"
 RESET = "\033[0m"
+
+# Database Path
+DB = Path("data/jobs_d1.db")
 
 # Logging setup 
 logging.basicConfig(
@@ -15,7 +19,7 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 # Batch Config
-BATCH_SIZE = 10
+BATCH_SIZE = 5
 RETRY_DELAY = 2
 MAX_RETRIES = 3
 
@@ -104,6 +108,9 @@ def parse_response(response, batch_size):
             if job_id.strip().isdigit():
                 valid_lines.append(line)
 
+    print(len(valid_lines))
+    print(valid_lines)
+
     # Validate
     if len(valid_lines) != batch_size:
         raise ValueError(
@@ -173,7 +180,7 @@ def tag_data(db_url: str):
                 try:
                     # Prompt LLM to extract tech stack 
                     prompt = build_prompt(batch)
-                    response = prompt_model("gemini-3-flash-preview", prompt)       
+                    response = prompt_model("gemini-2.5-flash", prompt)       
 
                     # Format tech stack from LLM output 
                     responses = parse_response(response, len(batch))
@@ -201,3 +208,6 @@ def tag_data(db_url: str):
     finally:
         if conn:
             conn.close()
+
+if __name__ == "__main__":
+    tag_data(DB)
