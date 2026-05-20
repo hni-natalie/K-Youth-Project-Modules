@@ -10,6 +10,9 @@ RESET = "\033[0m"
 # Database Path
 DB = Path("data/jobs_d1.db")
 
+# Model
+MODEL = "gemini-2.5-flash-lite"
+
 # Logging setup 
 logging.basicConfig(
     level=logging.INFO,
@@ -180,7 +183,7 @@ def tag_data(db_url: str):
                 try:
                     # Prompt LLM to extract tech stack 
                     prompt = build_prompt(batch)
-                    response = prompt_model("gemini-2.5-flash", prompt)       
+                    response = prompt_model(MODEL, prompt)       
 
                     # Format tech stack from LLM output 
                     responses = parse_response(response, len(batch))
