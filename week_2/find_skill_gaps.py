@@ -147,7 +147,7 @@ def get_resume_skills(input_file_path: str) -> set[str]:
         resume_text = f.read()
 
     prompt = PROMPT + resume_text
-    response = prompt_model("llama3.1:latest", prompt)
+    response = prompt_model("gemini-2.5-flash-lite", prompt)
 
     return normalize_skills(response)
 
@@ -184,10 +184,6 @@ def get_job_skills(db_url: str) -> set[str]:
 
 def find_skill_gaps(input_file_path: str, db_url: str) -> SkillGapResult:
     try:
-        # Extract resume content
-        with open(input_file_path, "r", encoding="utf-8") as f:
-            resume_content = f.read()
-
         # Prompt LLM to extract technical skill
         resume_skills = get_resume_skills(input_file_path)
         # print(f'Resume_skills: {resume_skills}') # debug

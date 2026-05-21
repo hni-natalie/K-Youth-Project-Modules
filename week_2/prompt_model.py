@@ -22,7 +22,7 @@ def prompt_gemini(model: str, prompt: str) -> str:
 
     except Exception as e:
         return f"[Gemini Error] {str(e)}"
-
+    
 
 def prompt_ollama(model: str, prompt: str) -> str:
     """

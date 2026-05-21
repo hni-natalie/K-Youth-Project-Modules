@@ -116,9 +116,7 @@ def parse_response(response, batch_size):
 
     # Validate
     if len(valid_lines) != batch_size:
-        raise ValueError(
-            f"Mismatch: expected {batch_size}, got {len(valid_lines)}"
-        )
+        raise ValueError(f"Mismatch: expected {batch_size}, got {len(valid_lines)}")
 
     return valid_lines
 
