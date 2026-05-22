@@ -8,7 +8,7 @@ GREEN = "\033[92m"
 RESET = "\033[0m"
 
 DB = Path("data/jobs_d1.db")
-RESUME = Path("data/resume_d3.txt")
+RESUME = Path("data/resume_d3_eval.txt")
 
 PROMPT = """
 You are a strict machine parser with fixed output rules.
@@ -149,8 +149,20 @@ def get_resume_skills(input_file_path: str) -> set[str]:
     prompt = PROMPT + resume_text
     response = prompt_model("gemini-2.5-flash-lite", prompt)
 
-    return normalize_skills(response)
+    # Handle model errors returned as text
+    if not response:
+        raise RuntimeError("Empty response from model")
 
+    response_lower = response.lower()
+
+    if (
+        "gemini error" in response_lower
+        or "ollama error" in response_lower
+        or "no api key" in response_lower
+    ):
+        raise RuntimeError(response)
+
+    return normalize_skills(response)
 
 
 def get_job_skills(db_url: str) -> set[str]:
@@ -195,7 +207,8 @@ def find_skill_gaps(input_file_path: str, db_url: str) -> SkillGapResult:
         gaps = sorted(job_skills - resume_skills)
         return SkillGapResult(gaps=gaps)
 
-    except Exception:
+    except Exception as e:
+        print(f"Job skill extraction failed: {e}")
         return SkillGapResult(gaps=[])
 
 
