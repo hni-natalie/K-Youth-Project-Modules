@@ -111,8 +111,9 @@ def parse_response(response, batch_size):
             if job_id.strip().isdigit():
                 valid_lines.append(line)
 
-    print(len(valid_lines))
-    print(valid_lines)
+    # Debug
+    # print(len(valid_lines))
+    # print(valid_lines)
 
     # Validate
     if len(valid_lines) != batch_size:
