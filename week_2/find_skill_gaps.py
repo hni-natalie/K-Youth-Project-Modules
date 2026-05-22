@@ -8,7 +8,7 @@ GREEN = "\033[92m"
 RESET = "\033[0m"
 
 DB = Path("data/jobs_d1.db")
-RESUME = Path("data/resume_d3_eval.txt")
+RESUME = Path("data/resume_d3.txt")
 
 PROMPT = """
 You are a strict machine parser with fixed output rules.
