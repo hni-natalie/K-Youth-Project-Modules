@@ -52,7 +52,7 @@
                     class="form-control rounded-3"
                     placeholder="Type your message..."
                     rows="1"
-                    style="resize: none;">
+                    style="resize: none; overflow:hidden; min-height:45px; max-height:150px;">
                 </textarea>
 
                 <!-- SEND BUTTON -->
@@ -71,6 +71,16 @@
 
         const fileContainer = document.getElementById("fileContainer");
         const input = document.getElementById("messageInput");
+
+        function autoResizeTextarea(el) {
+            el.style.height = "auto";
+            el.style.height = el.scrollHeight + "px";
+        }
+
+        // AUTO RESIZING WHEN TYPING
+        input.addEventListener("input", function () {
+            autoResizeTextarea(this);
+        });
 
         // FILE UPLOAD
         document.getElementById("fileInput").addEventListener("change", async function (event) {
