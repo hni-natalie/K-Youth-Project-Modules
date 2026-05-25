@@ -1,11 +1,224 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Week 3</title>
-</head>
-<body>
-    Hello World
-</body>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Chat Page</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  </head>
+
+  <body class="bg-dark text-white">
+
+    <div class="container py-4">
+
+      <h3 class="text-center mb-4">💬 Chat Bot</h3>
+
+      <!-- CHAT BOX -->
+      <div id="chatBox"
+           class="border rounded p-3 bg-white"
+           style="height: 70vh; overflow-y: auto;">
+
+        <div class="text-start mb-2">
+          <div class="d-inline-block p-2 rounded bg-dark-subtle text-dark">
+            👧: Hello! How can I help you?
+          </div>
+        </div>
+
+      </div>
+
+      <!-- INPUT AREA -->
+      <div class="mt-3">
+
+        <!-- FILE PREVIEW AREA -->
+        <div id="fileContainer" class="mb-2 d-none"></div>
+
+        <div class="d-flex align-items-center gap-2">
+
+          <!-- FILE INPUT -->
+          <input type="file"
+                 id="fileInput"
+                 accept="application/pdf"
+                 multiple
+                 hidden />
+
+          <!-- + BUTTON -->
+          <button onclick="document.getElementById('fileInput').click()"
+                  class="btn btn-light rounded-circle d-flex align-items-center justify-content-center"
+                  style="width: 45px; height: 45px;">
+            <i class="bi bi-plus-lg"></i>
+          </button>
+
+          <!-- TEXT INPUT (textarea for Shift+Enter) -->
+          <textarea id="messageInput"
+                    class="form-control rounded-3"
+                    placeholder="Type your message..."
+                    rows="1"
+                    style="resize: none;"></textarea>
+
+          <!-- SEND BUTTON -->
+          <button onclick="sendMessage()"
+                  class="btn btn-light rounded-circle d-flex align-items-center justify-content-center"
+                  style="width: 45px; height: 45px;">
+            <i class="bi bi-arrow-up"></i>
+          </button>
+
+        </div>
+      </div>
+
+    </div>
+
+    <script>
+      let files = [];
+
+      const fileContainer = document.getElementById("fileContainer");
+      const input = document.getElementById("messageInput");
+
+      // 📎 FILE UPLOAD
+      document.getElementById("fileInput").addEventListener("change", async function (event) {
+        const selectedFiles = Array.from(event.target.files);
+
+        for (const file of selectedFiles) {
+          const text = await file.text();
+
+          files.push({
+            name: file.name,
+            text: text
+          });
+        }
+
+        renderFiles();
+      });
+
+      // 📄 RENDER FILE PREVIEW (INPUT AREA)
+      function renderFiles() {
+        if (files.length === 0) {
+          fileContainer.classList.add("d-none");
+          fileContainer.innerHTML = "";
+          return;
+        }
+
+        fileContainer.classList.remove("d-none");
+
+        fileContainer.innerHTML = files.map((f, i) => `
+          <div class="bg-secondary text-white p-2 mb-1 rounded d-flex justify-content-between align-items-center">
+            <span>📎 ${f.name}</span>
+            <button class="btn btn-sm btn-light" onclick="removeFile(${i})">✕</button>
+          </div>
+        `).join("");
+      }
+
+      function removeFile(index) {
+        files.splice(index, 1);
+        renderFiles();
+      }
+
+      function clearFiles() {
+        files = [];
+        renderFiles();
+        document.getElementById("fileInput").value = "";
+      }
+
+      // 💬 ADD CHAT MESSAGE
+      function addMessage(text, sender) {
+        const chatBox = document.getElementById("chatBox");
+
+        const wrapper = document.createElement("div");
+        wrapper.className = sender === "user"
+          ? "text-end mb-2"
+          : "text-start mb-2";
+
+        const bubble = document.createElement("div");
+        bubble.className =
+          sender === "user"
+            ? "d-inline-block p-2 rounded bg-secondary text-white"
+            : "d-inline-block p-2 rounded bg-dark-subtle text-dark";
+
+        bubble.innerText = text;
+
+        wrapper.appendChild(bubble);
+        chatBox.appendChild(wrapper);
+
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      // 📎 FILE BUBBLES IN CHAT
+      function addFileBubbles(fileList) {
+        const chatBox = document.getElementById("chatBox");
+
+        fileList.forEach(f => {
+          const wrapper = document.createElement("div");
+          wrapper.className = "text-end mb-1";
+
+          const bubble = document.createElement("div");
+          bubble.className = "d-inline-flex align-items-center gap-2 p-2 px-3 rounded bg-light text-dark border";
+
+          bubble.innerHTML = `
+            <i class="bi bi-file-earmark-pdf-fill text-danger fs-5"></i>
+            <div>
+              <div class="fw-semibold">${f.name}</div>
+              <div class="text-muted small">PDF</div>
+            </div>
+          `;
+
+          wrapper.appendChild(bubble);
+          chatBox.appendChild(wrapper);
+
+          chatBox.scrollTop = chatBox.scrollHeight;
+        });
+      }
+
+      // 🚀 SEND MESSAGE
+      function sendMessage() {
+        const text = input.value.trim();
+
+        if (!text && files.length === 0) return;
+
+        const hasFiles = files.length > 0;
+
+        // show files first
+        if (hasFiles) {
+          addFileBubbles([...files]);
+        }
+
+        // show message
+        if (text) {
+          addMessage(text, "user");
+        }
+
+        input.value = "";
+
+        setTimeout(() => {
+          if (hasFiles) {
+            addMessage("👧: Received your message + files 👍", "bot");
+          } else {
+            addMessage("👧: Received your message 👍", "bot");
+          }
+        }, 400);
+
+        clearFiles();
+        input.focus();
+      }
+
+      // ⌨️ ENTER + SHIFT+ENTER
+      input.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") {
+          if (event.shiftKey) {
+            return; // allow newline
+          }
+          event.preventDefault();
+          sendMessage();
+        }
+      });
+
+      // AUTO FOCUS
+      window.onload = function () {
+        input.focus();
+      };
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+
+  </body>
 </html>
