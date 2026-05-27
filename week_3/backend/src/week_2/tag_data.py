@@ -2,7 +2,7 @@ import sqlite3
 import logging
 import time
 from pathlib import Path 
-from prompt_model import prompt_model
+from src.week_2.prompt_model import prompt_model
 
 GREEN = "\033[92m"
 RESET = "\033[0m"
@@ -154,11 +154,11 @@ def tag_data(db_url: str):
         cursor = conn.cursor()
 
         # Clear previous result for different model testing 
-        cursor.execute("""
-            UPDATE jobs
-            SET tech_stack = NULL
-        """)
-        conn.commit()
+        # cursor.execute("""
+        #     UPDATE jobs
+        #     SET tech_stack = NULL
+        # """)
+        # conn.commit()
 
         batch_num = 0
 
