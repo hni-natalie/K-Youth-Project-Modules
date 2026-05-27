@@ -61,26 +61,34 @@ def prompt_gemini(model: str, prompt: str) -> str:
 # =========================
 def prompt_ollama(model: str, prompt: str) -> str:
     """
-    Handle Ollama model requests safely
+    Handle Ollama model requests safely (Docker-safe)
     """
-    res = requests.post(
-        "http://localhost:11434/api/generate",
-        json={
-            "model": model,
-            "prompt": prompt,
-            "stream": False
-        },
-        timeout=60
-    )
 
-    # correct HTTP-level error handling
-    if not res.ok:
-        raise RuntimeError(f"Ollama HTTP {res.status_code}: {res.text}")
+    OLLAMA_URL = "http://host.docker.internal:11434/api/generate"
 
-    data = res.json()
+    try:
+        res = requests.post(
+            OLLAMA_URL,
+            json={
+                "model": model,
+                "prompt": prompt,
+                "stream": False
+            },
+            timeout=60
+        )
 
-    return data.get("response", "")
+        if not res.ok:
+            raise RuntimeError(f"Ollama HTTP {res.status_code}: {res.text}")
 
+        data = res.json()
+
+        return data.get("response", "")
+
+    except requests.exceptions.ConnectionError:
+        raise RuntimeError(
+            "Cannot connect to Ollama. "
+            "Make sure Ollama is running on host machine."
+        )
 
 # =========================
 # ROUTER
@@ -127,4 +135,3 @@ def test_prompt():
 
 if __name__ == "__main__":
     print(test_prompt())
-    
