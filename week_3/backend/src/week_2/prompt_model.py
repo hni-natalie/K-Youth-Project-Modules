@@ -3,21 +3,52 @@ import sys
 import requests
 from google import genai
 from dotenv import load_dotenv
+from pathlib import Path
+
+
+# =========================
+# LOAD .ENV (LOCAL DEV ONLY)
+# =========================
+load_dotenv()
+
+
+# =========================
+# HELPERS
+# =========================
+def get_gemini_api_key() -> str:
+    """
+    Priority:
+    1. Docker secret file (recommended in Docker)
+    2. Environment variable (.env or system env)
+    """
+
+    # -------------------------
+    # 1. Docker secret (preferred)
+    # -------------------------
+    secret_path = "/run/secrets/gemini_api_key"
+
+    if Path(secret_path).exists():
+        key = Path(secret_path).read_text().strip()
+        print("[Gemini Key] Loaded from Docker secret")
+        return key
+
+    # -------------------------
+    # 2. Environment variable fallback
+    # -------------------------
+    key = os.getenv("GEMINI_API_KEY")
+
+    if key:
+        print("[Gemini Key] Loaded from environment variable")
+        return key
+
+    raise RuntimeError("Missing Gemini API key (no secret or env found)")
 
 
 # =========================
 # GEMINI
 # =========================
 def prompt_gemini(model: str, prompt: str) -> str:
-    """
-    Handle Gemini model requests safely
-    """
-    load_dotenv()
-
-    api_key = os.getenv("GEMINI_API_KEY")
-
-    if not api_key:
-        raise RuntimeError("Missing GEMINI_API_KEY")
+    api_key = get_gemini_api_key()
 
     client = genai.Client(api_key=api_key)
 
@@ -26,14 +57,9 @@ def prompt_gemini(model: str, prompt: str) -> str:
             model=model,
             contents=prompt
         )
-
     except Exception as e:
-        # catches 404, 503, quota, invalid model, etc.
         raise RuntimeError(f"Gemini API error: {repr(e)}")
 
-    # =========================
-    # Validate response object
-    # =========================
     if not getattr(response, "candidates", None):
         raise RuntimeError("Gemini returned no candidates")
 
@@ -57,18 +83,14 @@ def prompt_gemini(model: str, prompt: str) -> str:
 
 
 # =========================
-# OLLAMA
+# OLLAMA (DOCKER SAFE)
 # =========================
 def prompt_ollama(model: str, prompt: str) -> str:
-    """
-    Handle Ollama model requests safely (Docker-safe)
-    """
-
-    OLLAMA_URL = "http://host.docker.internal:11434/api/generate"
+    url = "http://host.docker.internal:11434/api/generate"
 
     try:
         res = requests.post(
-            OLLAMA_URL,
+            url,
             json={
                 "model": model,
                 "prompt": prompt,
@@ -81,24 +103,19 @@ def prompt_ollama(model: str, prompt: str) -> str:
             raise RuntimeError(f"Ollama HTTP {res.status_code}: {res.text}")
 
         data = res.json()
-
         return data.get("response", "")
 
     except requests.exceptions.ConnectionError:
         raise RuntimeError(
             "Cannot connect to Ollama. "
-            "Make sure Ollama is running on host machine."
+            "Make sure Ollama is running on your host machine."
         )
+
 
 # =========================
 # ROUTER
 # =========================
 def prompt_model(model: str, prompt: str) -> dict:
-    """
-    Route request to correct model provider
-    Returns structured response for FastAPI
-    """
-
     try:
         if model.startswith("gemini-"):
             response = prompt_gemini(model, prompt)
@@ -111,7 +128,6 @@ def prompt_model(model: str, prompt: str) -> dict:
         }
 
     except Exception as e:
-        # backend debug only (never expose raw error to frontend)
         print(f"[LLM ERROR - {model}] {repr(e)}")
 
         return {

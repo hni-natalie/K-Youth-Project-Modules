@@ -7,7 +7,7 @@ import os
 import tempfile
 from pathlib import Path
 
-from pypdf import PdfReader  # ✅ NEW
+from pypdf import PdfReader
 
 from src.week_2.find_skill_gaps import find_skill_gaps
 from src.week_2.prompt_model import prompt_model
@@ -18,8 +18,8 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent
 DB_URL = BASE_DIR / "week_2" / "data" / "jobs_d1.db"
 
-MODEL = "llama3.1"
-# MODEL = "gemini-3-flash-preview"
+# MODEL = "llama3.1"
+MODEL = "gemini-3-flash-preview"
 
 app = FastAPI()
 

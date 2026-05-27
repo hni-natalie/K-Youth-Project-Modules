@@ -180,10 +180,7 @@ def get_resume_skills(input_file_path: str) -> set[str]:
     return normalize_skills(response)
 
 
-def get_job_skills(
-    db_url: str,
-    batch_size: int = 500
-) -> set[str]:
+def get_job_skills(db_url: str, batch_size: int = 500) -> set[str]:
     """
     Extract unique job skills from database
     """
@@ -212,72 +209,41 @@ def get_job_skills(
 
         for job_id, tech_stack in rows:
             last_id = job_id
-            job_skills.update(
-                normalize_skills(tech_stack)
-            )
+            job_skills.update(normalize_skills(tech_stack))
 
     conn.close()
 
     return job_skills
 
 
-def find_skill_gaps(
-    input_file_path: str,
-    db_url: str
-) -> SkillGapResult:
+def find_skill_gaps(input_file_path: str, db_url: str) -> SkillGapResult:
     """
-    Compare resume skills against
-    job market skills
+        Compare resume skills against
+        job market skills
     """
     try:
         # Extract resume skills
-        resume_skills = get_resume_skills(
-            input_file_path
-        )
+        resume_skills = get_resume_skills(input_file_path)
 
-        print(
-            f"Resume skills:\n"
-            f"{resume_skills}\n"
-        )
+        print(f"Resume skills:\n {resume_skills}\n")
 
         # Extract job skills
-        job_skills = get_job_skills(
-            db_url
-        )
+        job_skills = get_job_skills(db_url)
 
-        print(
-            f"Job skills:\n"
-            f"{job_skills}\n"
-        )
+        print(f"Job skills:\n {job_skills}\n")
 
         # Missing skills
-        gaps = sorted(
-            job_skills - resume_skills
-        )
+        gaps = sorted(job_skills - resume_skills)
 
-        return SkillGapResult(
-            gaps=gaps
-        )
+        return SkillGapResult(gaps=gaps)
 
     except Exception as e:
         # backend debugging only
-        print(
-            f"[SKILL GAP ERROR] {str(e)}"
-        )
+        print(f"[SKILL GAP ERROR] {str(e)}")
 
-        return SkillGapResult(
-            gaps=[]
-        )
+        return SkillGapResult(gaps=[])
 
 
 if __name__ == "__main__":
-    result = find_skill_gaps(
-        RESUME,
-        DB
-    )
-
-    print(
-        f"{GREEN}"
-        f"{result}"
-        f"{RESET}"
-    )
+    result = find_skill_gaps( RESUME, DB )
+    print(f"{GREEN}" f"{result}" f"{RESET}")
