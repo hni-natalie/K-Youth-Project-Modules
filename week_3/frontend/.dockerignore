@@ -1,0 +1,38 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+
+# Git
+.git/
+.gitignore
+
+# Environment variables
+.env
+
+# macOS junk
+.DS_Store
+
+# IDE files
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Local databases (optional)
+*.db
+
+# Testing / temp files
+tmp/
+temp/
+
+# Python build files
+dist/
+build/
+*.egg-info/
