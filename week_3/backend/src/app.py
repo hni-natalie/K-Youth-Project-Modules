@@ -18,8 +18,8 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent
 DB_URL = BASE_DIR / "week_2" / "data" / "jobs_d1.db"
 
-# MODEL = "llama3.1"
-MODEL = "gemini-3-flash-preview"
+MODEL = "llama3.1"
+# MODEL = "gemini-3-flash-preview"
 
 app = FastAPI()
 
