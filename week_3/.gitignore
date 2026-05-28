@@ -2,4 +2,6 @@ __pycache__/
 .ruff_cache/
 .venv
 .env
+
+# secrets (DO NOT COMMIT API KEYS)
 secrets/
