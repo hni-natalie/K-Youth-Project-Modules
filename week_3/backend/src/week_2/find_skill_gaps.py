@@ -9,7 +9,6 @@ GREEN = "\033[92m"
 RESET = "\033[0m"
 
 DB = Path("data/jobs_d1.db")
-RESUME = Path("data/resume.txt")
 
 MODEL = "gemini-2.5-flash-lite"
 
@@ -58,14 +57,13 @@ INPUT:
 """
 
 
-class SkillGapResult(BaseModel):
-    # List of missing skills
+class SkillGapResult(BaseModel): 
     gaps: List[str]
-
 
 def normalize_skills(skill_text: str) -> set[str]:
     """
-    Normalize skill names for deterministic matching
+        Normalize skill names
+        for deterministic matching
     """
     skills = set()
 
@@ -153,16 +151,15 @@ def normalize_skills(skill_text: str) -> set[str]:
     return skills
 
 
-def get_resume_skills(input_file_path: str) -> set[str]:
+def get_resume_skills( resume_text: str ) -> set[str]:
     """
-    Extract technical skills from resume using LLM
+        Extract technical skills
+        from resume text using LLM
     """
-    with open(input_file_path, "r", encoding="utf-8") as f:
-        resume_text = f.read()
 
     prompt = PROMPT + resume_text
 
-    result = prompt_model(MODEL, prompt)
+    result = prompt_model( MODEL, prompt )
 
     # Handle LLM failure
     if not result.get("success"):
@@ -173,17 +170,19 @@ def get_resume_skills(input_file_path: str) -> set[str]:
             )
         )
 
-    response = result.get("response", "")
+    response = result.get( "response", "" )
 
-    print(f"LLM extracted skills:\n{response}\n")
+    print( f"LLM extracted skills:\n {response}\n")
 
     return normalize_skills(response)
 
 
-def get_job_skills(db_url: str, batch_size: int = 500) -> set[str]:
+def get_job_skills( db_url: str, batch_size: int = 500 ) -> set[str]:
     """
-    Extract unique job skills from database
+        Extract unique job skills
+        from database
     """
+
     job_skills = set()
 
     conn = sqlite3.connect(db_url)
@@ -192,6 +191,7 @@ def get_job_skills(db_url: str, batch_size: int = 500) -> set[str]:
     last_id = 0
 
     while True:
+
         cursor.execute("""
             SELECT source_id, tech_stack
             FROM jobs
@@ -200,50 +200,48 @@ def get_job_skills(db_url: str, batch_size: int = 500) -> set[str]:
             AND source_id > ?
             ORDER BY source_id
             LIMIT ?
-        """, (last_id, batch_size))
+        """, ( last_id, batch_size ) )
 
         rows = cursor.fetchall()
 
         if not rows:
             break
 
-        for job_id, tech_stack in rows:
+        for ( job_id, tech_stack) in rows:
+
             last_id = job_id
-            job_skills.update(normalize_skills(tech_stack))
+
+            job_skills.update( normalize_skills( tech_stack ) )
 
     conn.close()
 
     return job_skills
 
 
-def find_skill_gaps(input_file_path: str, db_url: str) -> SkillGapResult:
+def find_skill_gaps( resume_text: str, db_url: str ) -> SkillGapResult:
     """
-        Compare resume skills against
-        job market skills
+        Compare resume skills
+        against job market skills
     """
+
     try:
         # Extract resume skills
-        resume_skills = get_resume_skills(input_file_path)
+        resume_skills = ( get_resume_skills( resume_text ) )
 
-        print(f"Resume skills:\n {resume_skills}\n")
+        print( f"Resume skills:\n {resume_skills}\n" )
 
         # Extract job skills
-        job_skills = get_job_skills(db_url)
+        job_skills = ( get_job_skills( db_url ) )
 
-        print(f"Job skills:\n {job_skills}\n")
+        print( f"Job skills:\n {job_skills}\n" )
 
         # Missing skills
-        gaps = sorted(job_skills - resume_skills)
+        gaps = sorted( job_skills - resume_skills )
 
-        return SkillGapResult(gaps=gaps)
+        return SkillGapResult( gaps=gaps )
 
     except Exception as e:
-        # backend debugging only
-        print(f"[SKILL GAP ERROR] {str(e)}")
 
-        return SkillGapResult(gaps=[])
+        print( f"[SKILL GAP ERROR] {str(e)}" )
 
-
-if __name__ == "__main__":
-    result = find_skill_gaps( RESUME, DB )
-    print(f"{GREEN}" f"{result}" f"{RESET}")
+        return SkillGapResult( gaps=[] )

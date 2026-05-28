@@ -10,6 +10,8 @@ services:
       - OLLAMA_URL=http://host.docker.internal:11434/api/generate
     secrets:
       - gemini_api_key
+    networks:
+      - app-network
 
   frontend:
     image: frontend
@@ -18,7 +20,13 @@ services:
       - "8000:8000"
     depends_on:
       - backend
+    networks:
+      - app-network
 
 secrets:
   gemini_api_key:
     file: ./secrets/gemini_api_key.txt
+
+networks:
+  app-network:
+    driver: bridge

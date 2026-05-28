@@ -9,13 +9,15 @@ window.addEventListener("DOMContentLoaded", () => {
     input.value = "";
     input.style.height = "45px";
 
-    /* Auto resize textarea */
+    /* ===================== AUTO RESIZE ===================== */
+
     input.addEventListener("input", function () {
         this.style.height = "auto";
         this.style.height = this.scrollHeight + "px";
     });
 
-    /* Enter = send */
+    /* ===================== ENTER = SEND ===================== */
+
     input.addEventListener("keydown", function (event) {
         if (event.key === "Enter" && !event.shiftKey) {
             event.preventDefault();
@@ -43,7 +45,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     window.addEventListener("load", () => input.focus());
 
-    /* ===================== UI ===================== */
+    /* ===================== FILE UI ===================== */
 
     function renderFiles() {
         if (files.length === 0) {
@@ -57,7 +59,9 @@ window.addEventListener("DOMContentLoaded", () => {
         fileContainer.innerHTML = files.map((f, i) => `
             <div class="bg-secondary text-white p-2 mb-1 rounded d-flex justify-content-between align-items-center">
                 <span>📎 ${f.name}</span>
-                <button class="btn btn-sm btn-light" onclick="removeFile(${i})">✕</button>
+                <button class="btn btn-sm btn-light" onclick="removeFile(${i})">
+                    ✕
+                </button>
             </div>
         `).join("");
     }
@@ -102,11 +106,14 @@ window.addEventListener("DOMContentLoaded", () => {
         const chatBox = document.getElementById("chatBox");
 
         const wrapper = document.createElement("div");
-        wrapper.className = sender === "user"
-            ? "text-end mb-2"
-            : "text-start mb-2";
+
+        wrapper.className =
+            sender === "user"
+                ? "text-end mb-2"
+                : "text-start mb-2";
 
         const bubble = document.createElement("div");
+
         bubble.className =
             sender === "user"
                 ? "d-inline-block p-2 rounded bg-secondary text-white"
@@ -136,9 +143,49 @@ window.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    /* ===================== PDF EXTRACTION ===================== */
+
+    async function extractPDFText(file) {
+        try {
+            console.log("📄 Extracting:", file.name);
+
+            const arrayBuffer = await file.arrayBuffer();
+
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+            console.log("📄 Pages:", pdf.numPages);
+
+            let text = "";
+
+            for (let i = 1; i <= pdf.numPages; i++) {
+
+                const page = await pdf.getPage(i);
+
+                const content = await page.getTextContent();
+
+                const pageText = content.items
+                    .map(item => item.str)
+                    .join(" ");
+
+                console.log(`PAGE ${i}:`, pageText);
+
+                text += pageText + "\n";
+            }
+
+            console.log("✅ FINAL TEXT:", text);
+
+            return text.trim();
+
+        } catch (err) {
+            console.error("❌ PDF extract failed:", err);
+            return "";
+        }
+    }
+
     /* ===================== MAIN SEND ===================== */
 
     async function sendMessage() {
+
         const text = input.value.trim();
 
         if (!text && files.length === 0) return;
@@ -150,8 +197,9 @@ window.addEventListener("DOMContentLoaded", () => {
         console.log("📎 FILES COUNT:", currentFiles.length);
         console.log("📎 FILES:", currentFiles);
 
-        if (currentFiles.length > 0) addFileBubbles(currentFiles);
-        if (text) addMessage(text, "user");
+        if (currentFiles.length > 0) { addFileBubbles(currentFiles); }
+
+        if (text) { addMessage(text, "user"); }
 
         addLoadingMessage();
 
@@ -159,47 +207,87 @@ window.addEventListener("DOMContentLoaded", () => {
         input.style.height = "45px";
 
         const formData = new FormData();
+
         formData.append("message", text);
 
-        // ===================== DEBUG 1 =====================
-        console.log("=== BEFORE APPENDING FILES ===");
+        let extractedText = "";
 
-        currentFiles.forEach(f => {
-            console.log("➡️ adding file:", f.name, f);
+        console.log( "=== BEFORE APPENDING FILES ===" );
 
+        for (const f of currentFiles) {
+
+            console.log( "➡️ adding file:", f.name, f);
+
+            // Keep file upload
             formData.append("files", f);
-        });
 
-        // ===================== DEBUG 2 (CRITICAL) =====================
-        console.log("=== DEBUG FORM DATA ===");
+            // Extract PDF text
+            if (
+                f.type === "application/pdf" ||
+                f.name.toLowerCase().endsWith(".pdf")
+            ) {
+
+                const pdfText =
+                    await extractPDFText(f);
+
+                extractedText += `
+===== FILE: ${f.name} =====
+
+${pdfText}
+
+`;
+            }
+        }
+
+        // Send extracted text
+        formData.append( "pdf_text", extractedText );
+
+        console.log( "📑 EXTRACTED PDF TEXT:" );
+
+        console.log(extractedText);
+
+        /* ===================== DEBUG ===================== */
+
+        console.log( "=== DEBUG FORM DATA ===" );
 
         for (let pair of formData.entries()) {
-            console.log(pair[0], pair[1]);
+            console.log( pair[0], pair[1] );
         }
 
         try {
-            const res = await fetch(`${BACKEND_URL}/chat`, {
-                method: "POST",
-                body: formData
-            });
+
+            const res = await fetch(
+                `${BACKEND_URL}/chat`,
+                {
+                    method: "POST",
+                    body: formData
+                }
+            );
 
             const data = await res.json();
 
             removeLoadingMessage();
             clearFiles();
 
-            console.log("📩 RESPONSE:", data);
+            console.log( "📩 RESPONSE:", data );
 
             if (data.success === false) {
-                addMessage(data.message || "Something went wrong", "bot");
+                addMessage(
+                    data.message ||
+                    "Something went wrong",
+                    "bot"
+                );
             } else {
-                addMessage(data.response, "bot");
+                addMessage( data.response, "bot" );
             }
 
         } catch (err) {
+
             removeLoadingMessage();
-            addMessage("❌ Backend error", "bot");
-            console.error("FETCH ERROR:", err);
+
+            addMessage( "❌ Backend error", "bot" );
+
+            console.error( "FETCH ERROR:", err );
         }
 
         input.focus();

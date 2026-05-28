@@ -3,11 +3,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from typing import List
-import os
-import tempfile
 from pathlib import Path
-
-from pypdf import PdfReader
 
 from src.week_2.find_skill_gaps import find_skill_gaps
 from src.week_2.prompt_model import prompt_model
@@ -18,8 +14,7 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent
 DB_URL = BASE_DIR / "week_2" / "data" / "jobs_d1.db"
 
-MODEL = "llama3.1"
-# MODEL = "gemini-3-flash-preview"
+MODEL = "gemini-2.5-flash"
 
 app = FastAPI()
 
@@ -34,7 +29,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 # =========================
 # HEALTH CHECK
 # =========================
@@ -44,16 +38,23 @@ def health_check():
 
 
 # =========================
-# PDF TEXT EXTRACTION
+# SKILL GAP DETECTOR
 # =========================
-def extract_pdf_text(pdf_path: str) -> str:
-    reader = PdfReader(pdf_path)
+def wants_skill_gap_analysis(message: str) -> bool:
+    if not message:
+        return False
 
-    text = ""
-    for page in reader.pages:
-        text += page.extract_text() or ""
+    message = message.lower()
 
-    return text.strip()
+    keywords = [
+        "skill gap", "skills gap", "missing skill", "missing skills",
+        "gap analysis", "analyze resume", "analyse resume",
+        "resume analysis", "cv analysis", "improve my resume",
+        "what skills am i missing", "what am i missing",
+        "match my resume"
+    ]
+
+    return any(k in message for k in keywords)
 
 
 # =========================
@@ -62,83 +63,108 @@ def extract_pdf_text(pdf_path: str) -> str:
 @app.post("/chat")
 async def chat(
     message: str = Form(""),
+    pdf_text: str = Form(""),
     files: List[UploadFile] = File(default=[])
 ):
-    temp_file_paths = []
 
-    print("=== REQUEST RECEIVED ===")
-    print("Message:", message)
-    print("Number of files:", len(files))
+    print("\n=== REQUEST RECEIVED ===")
+    print("Message:", repr(message))
+    print("Files:", len(files))
+    print("PDF text length:", len(pdf_text))
 
-    for f in files:
-        print("Filename:", f.filename)
-        print("Content type:", f.content_type)
+    # =========================
+    # BASIC INPUT VALIDATION
+    # =========================
+    has_message = bool(message and message.strip())
+    has_resume = bool(files and pdf_text and pdf_text.strip())
+
+    if not has_message and not has_resume:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "success": False,
+                "message": "Please provide a message or upload a resume."
+            }
+        )
 
     try:
-        # =========================
-        # Save uploaded files
-        # =========================
-        for f in files:
-            suffix = os.path.splitext(f.filename)[-1]
 
-            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
-            tmp.write(await f.read())
-            tmp.close()
-
-            temp_file_paths.append(tmp.name)
+        wants_skill_gap = wants_skill_gap_analysis(message)
 
         # =========================
-        # CASE 1: NO FILE
+        # CASE 1: Resume + Skill Gap
         # =========================
-        if not temp_file_paths:
-            result = prompt_model(MODEL, message)
+        if has_resume and wants_skill_gap:
 
-            if not result.get("success"):
+            print("CASE 1: Resume + Skill Gap")
+
+            # avoid running DB tagging every request (optional optimization)
+            tag_data(DB_URL)
+
+            skill_result = find_skill_gaps(pdf_text, DB_URL)
+
+            prompt = f"""
+You are a resume assistant.
+
+User Message:
+{message}
+
+Resume:
+{pdf_text}
+
+Skill Gap Analysis:
+{skill_result}
+
+Task:
+Use the resume + skill gap analysis to answer the user clearly.
+"""
+
+            result = prompt_model(MODEL, prompt)
+
+        # =========================
+        # CASE 2: Resume Only
+        # =========================
+        elif has_resume:
+
+            print("CASE 2: Resume only")
+
+            prompt = f"""
+You are a resume assistant.
+
+User Message:
+{message}
+
+Resume:
+{pdf_text}
+
+Task:
+Answer only using the resume content.
+"""
+
+            result = prompt_model(MODEL, prompt)
+
+        # =========================
+        # CASE 3: Normal Chat
+        # =========================
+        else:
+
+            print("CASE 3: Prompt only")
+
+            # extra safety: prevent empty prompt to LLM
+            if not has_message:
                 return JSONResponse(
-                    status_code=500,
+                    status_code=400,
                     content={
                         "success": False,
-                        "message": result.get("error", "LLM failed")
+                        "message": "Empty message is not allowed."
                     }
                 )
 
-            return JSONResponse(
-                status_code=200,
-                content={
-                    "success": True,
-                    "response": result["response"]
-                }
-            )
+            result = prompt_model(MODEL, message)
 
         # =========================
-        # CASE 2: WITH FILE (PDF → TEXT)
+        # LLM FAILURE HANDLING
         # =========================
-        tag_data(DB_URL)
-
-        pdf_path = temp_file_paths[0]
-
-        # 1. extract text from PDF
-        pdf_text = extract_pdf_text(pdf_path)
-
-        # 2. save to txt (debuggable + reusable)
-        txt_path = pdf_path.replace(".pdf", ".txt")
-
-        with open(txt_path, "w", encoding="utf-8") as f:
-            f.write(pdf_text)
-
-        # 3. run skill gap analysis on text file
-        skill_result = find_skill_gaps(txt_path, DB_URL)
-
-        prompt = f"""
-        User message:
-        {message}
-
-        Skill Gap Analysis:
-        {skill_result}
-        """
-
-        result = prompt_model(MODEL, prompt)
-
         if not result.get("success"):
             return JSONResponse(
                 status_code=500,
@@ -163,16 +189,6 @@ async def chat(
             status_code=500,
             content={
                 "success": False,
-                "message": "Something went wrong. Please try again."
+                "message": "Internal server error"
             }
         )
-
-    finally:
-        # =========================
-        # Cleanup temp files
-        # =========================
-        for path in temp_file_paths:
-            try:
-                os.remove(path)
-            except Exception:
-                pass

@@ -69,6 +69,22 @@ source .venv/bin/activate
 
 ---
 
+### 🛠️ Create Secret Folder
+
+Create secret folder:
+
+```bash
+mkdir secrets
+```
+
+Create gemini_api_key.txt and store gemini_api_key:
+
+```bash
+touch gemini_api_key.txt
+```
+
+---
+
 ### 🔐 Configure Environment File
 
 #### Copy the example env file to local env file:
